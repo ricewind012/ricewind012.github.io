@@ -1,5 +1,53 @@
 const k_reURL = /(https?:\/\/[\w.-]+\.[a-z]{2,6}\b[-a-zA-Z0-9@:%_+.~#?&//=]*)/g;
-const k_strThingsURL = "https://raw.githubusercontent.com/ricewind012/ricewind012.github.io/refs/heads/master/things";
+const k_strBaseURL = "https://raw.githubusercontent.com/ricewind012/ricewind012.github.io/refs/heads/master";
+const k_vecThemes = [
+	"default",
+];
+
+/**
+ * @template T
+ * @param {T} vec
+ * @returns {T}
+ */
+function RandomArrayElement( vec )
+{
+	return vec[ Math.floor( Math.random() * vec.length ) ];
+}
+
+const ThemeStore =
+{
+	m_elLink: document.querySelector( "link[rel='stylesheet']" ),
+
+	/**
+	 * @param {string} strTheme
+	 */
+	Change( strTheme )
+	{
+		ExtResourcesTracker.Add();
+		this.m_elLink.href = `${ k_strBaseURL }/themes/${ strTheme }.css`;
+	},
+}
+
+const ExtResourcesTracker =
+{
+	// <link> + <script> in the html
+	m_unExternalResources: 2,
+
+	Add()
+	{
+		this.m_unExternalResources++;
+	},
+
+	/**
+	 * @param {string} strURL
+	 */
+	Fetch ( strURL )
+	{
+		this.Add();
+		console.log( this.m_unExternalResources );
+		return fetch( strURL );
+	},
+}
 
 class CBaseCustomElement extends HTMLElement
 {
@@ -44,6 +92,30 @@ class CMarkdownRendererElement extends CBaseCustomElement
 		this.m_lines.push( strParsed );
 	}
 
+	async GetText()
+	{
+		const strFileName = this.getAttribute( "file-name" );
+		if ( !strFileName )
+		{
+			return "no file-name attr";
+		}
+
+		const strURL = `${ k_strBaseURL }/things/${ strFileName }.md`;
+		const result = await ExtResourcesTracker.Fetch( strURL );
+		if ( !result.ok )
+		{
+			return `${ strURL } returned "${ await result.text() }"`;
+		}
+
+		const strContent = result.text();
+		if ( !strContent )
+		{
+			return "no text";
+		}
+
+		return strContent;
+	}
+
 	/**
 	 * @param {string} strText
 	 */
@@ -57,6 +129,12 @@ class CMarkdownRendererElement extends CBaseCustomElement
 				const len = line.match( /^#+/g ).length;
 				const strTag = `h${ len }`
 				this.AddLine( `<${ strTag }> ${ line.slice( len ) } </${ strTag }>`, true );
+				if ( len === 1 )
+				{
+					const strTitle = line.slice( len + 1 );
+					document.title = strTitle;
+					els.pageTitle.textContent = strTitle;
+				}
 				continue;
 			}
 
@@ -77,10 +155,14 @@ class CMarkdownRendererElement extends CBaseCustomElement
 				continue;
 			}
 
-			if ( line === "" && strParentTag !== "" )
+			if ( line === "" )
 			{
-				this.AddLine( `</${ strParentTag }>` );
-				strParentTag = "";
+				if ( strParentTag !== "" )
+				{
+					this.AddLine( `</${ strParentTag }>` );
+					strParentTag = "";
+				}
+				continue;
 			}
 
 			// text
@@ -92,24 +174,25 @@ class CMarkdownRendererElement extends CBaseCustomElement
 
 	async connectedCallback()
 	{
-		const strFileName = this.getAttribute( "file-name" );
-		if ( !strFileName )
-		{
-			return "no file-name attr";
-		}
-
-		const strContent = await ( await fetch( `${ k_strThingsURL }/${ strFileName }.md` ) ).text()
-		if ( !strContent )
-		{
-			return "no text";
-		}
-
+		const strContent = await this.GetText();
 		this.innerHTML = this.ParseText( strContent );
 	}
 }
 customElements.define( "markdown-renderer", CMarkdownRendererElement );
 
+let els = {};
+
 document.addEventListener( "DOMContentLoaded", () => {
-	const [ elHeader, elContent, elFooter ] = document.body.children;
-	console.log( {elHeader, elContent, elFooter} );
+	const id = (sel) => document.getElementById( sel );
+	els = {
+		changeThemeBtn: id( "change-theme" ),
+		extResInfo: id( "footer-ext-res-info" ),
+		pageTitle: id( "page-title" ),
+	};
+
+	els.changeThemeBtn.addEventListener( "click", () => {
+		const strTheme = RandomArrayElement( k_vecThemes );
+		ThemeStore.Change( strTheme );
+		els.extResInfo.dataset.count = ExtResourcesTracker.m_unExternalResources.toString();
+	} );
 } );
