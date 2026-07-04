@@ -2,11 +2,12 @@
 
 The "websocket open/closed" console message(s) on app startup is from the Clientdll/SteamUI WebSockets that are used for some APIs much like SteamClient, except done through protobuf services. God knows why it's done like that.
 
-You can replace the existing connections (see webpack module 12251) with your own like this (there will be errors about "multiple attempts", that means it works, but just in case, `MakeReady()` should return a `{ result: 1, message: "ready" }` object):
+You can replace the existing connections (see webpack module 12251) with your own like this (there will be errors about "multiple attempts", that means it works):
 ```ts
 const mod = findModuleExport( (e) => e.GetMaximumMsgSizeBytes );
 await mod.Init();
 await mod.MakeReady();
+// -> {result: 1, message: "ready"}
 ```
 
 They follow the same structure, and are simple objects, so they are easy to find as webpack modules:

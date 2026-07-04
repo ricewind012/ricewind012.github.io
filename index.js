@@ -1,3 +1,4 @@
+const k_reURL = /(https?:\/\/[\w.-]+\.[a-z]{2,6}\b[-a-zA-Z0-9@:%_+.~#?&//=]*)/g;
 const k_strThingsURL = "https://raw.githubusercontent.com/ricewind012/ricewind012.github.io/refs/heads/master/things";
 
 class CBaseCustomElement extends HTMLElement
@@ -24,23 +25,44 @@ class CBaseCustomElement extends HTMLElement
 // file-name | string
 class CMarkdownRendererElement extends CBaseCustomElement
 {
+	/** @type {string[]} */
+	m_lines = [];
+
+	/**
+	 * @param {string} strText
+	 * @param {boolean} bNeedsParsing
+	 */
+	AddLine( strText, bNeedsParsing = false )
+	{
+		if ( !bNeedsParsing )
+		{
+			this.m_lines.push( strText );
+			return;
+		}
+
+		const strParsed = strText.replace( k_reURL, "<a href='$1'> $1 </a>" );
+		this.m_lines.push( strParsed );
+	}
+
+	/**
+	 * @param {string} strText
+	 */
 	ParseText( strText )
 	{
 		let strParentTag = "";
-		const lines = [];
 		for ( const line of strText.split( "\n" ) )
 		{
 			if ( line.startsWith( "#" ) )
 			{
 				const len = line.match( /^#+/g ).length;
 				const strTag = `h${ len }`
-				lines.push( `<${ strTag }> ${ line.slice( len ) } </${ strTag }>` );
+				this.AddLine( `<${ strTag }> ${ line.slice( len ) } </${ strTag }>`, true );
 				continue;
 			}
 
 			if ( line.startsWith( "```" ) )
 			{
-				lines.push( line === "```" ? "</pre>" : "<pre>" );
+				this.AddLine( line === "```" ? "</pre>" : "<pre>" );
 				continue;
 			}
 
@@ -49,23 +71,23 @@ class CMarkdownRendererElement extends CBaseCustomElement
 				if ( strParentTag !== "ul" )
 				{
 					strParentTag = "ul";
-					lines.push( "<ul>" );
+					this.AddLine( "<ul>" );
 				}
-				lines.push( `<li> ${ line.slice( 2 ) } </li>` );
+				this.AddLine( `<li> ${ line.slice( 2 ) } </li>`, true );
 				continue;
 			}
 
-			if ( line === "" && strParentTag === "ul" )
+			if ( line === "" && strParentTag !== "" )
 			{
+				this.AddLine( `</${ strParentTag }>` );
 				strParentTag = "";
-				lines.push( "</ul>" );
 			}
 
 			// text
 			const strText = line.replace( /`(.*?)`/g, "<code> $1 </code>" );
-			lines.push( strText );
+			this.AddLine( strText, true );
 		}
-		return lines.join( "\n" );
+		return this.m_lines.join( "\n" );
 	}
 
 	async connectedCallback()
@@ -76,7 +98,7 @@ class CMarkdownRendererElement extends CBaseCustomElement
 			return "no file-name attr";
 		}
 
-		const strContent = await ( await fetch( `${k_strThingsURL}/${strFileName}.md` ) ).text()
+		const strContent = await ( await fetch( `${ k_strThingsURL }/${ strFileName }.md` ) ).text()
 		if ( !strContent )
 		{
 			return "no text";
