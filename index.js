@@ -16,22 +16,22 @@ function RandomArrayElement( vec )
 
 const ThemeStore =
 {
-	m_elLink: document.querySelector( "link[rel='stylesheet']" ),
+	m_elStyle: document.head.querySelector( "style" ),
 
 	/**
 	 * @param {string} strTheme
 	 */
-	Change( strTheme )
+	async Change( strTheme )
 	{
-		ExtResourcesTracker.Add();
-		this.m_elLink.href = `${ k_strBaseURL }/themes/${ strTheme }.css`;
+		const strContent = ExtResourcesTracker.FetchText( `${ k_strBaseURL }/themes/${ strTheme }.css` );
+		this.m_elStyle.textContent = strContent;
 	},
 }
 
 const ExtResourcesTracker =
 {
-	// <link> + <script> in the html
-	m_unExternalResources: 2,
+	// <link> in the html
+	m_unExternalResources: 1,
 
 	Add()
 	{
@@ -44,9 +44,27 @@ const ExtResourcesTracker =
 	Fetch ( strURL )
 	{
 		this.Add();
-		console.log( this.m_unExternalResources );
+		els.extResInfo.dataset.count = this.m_unExternalResources.toString();
 		return fetch( strURL );
 	},
+
+	/**
+	 * @param {string} strURL
+	 */
+	async FetchText( strURL )
+	{
+		const result = await this.Fetch( strURL );
+		if ( !result.ok )
+		{
+			return `${ strURL } returned "${ await result.text() }"`;
+		}
+
+		const strContent = await result.text();
+		if ( !strContent )
+		{
+			return "empty text";
+		}
+	}
 }
 
 class CBaseCustomElement extends HTMLElement
@@ -69,10 +87,10 @@ class CBaseCustomElement extends HTMLElement
 	}
 }
 
-// Attributes:
-// file-name | string
 class CMarkdownRendererElement extends CBaseCustomElement
 {
+	static observedAttributes = [ "file-name" ];
+
 	/** @type {string[]} */
 	m_lines = [];
 
@@ -95,25 +113,7 @@ class CMarkdownRendererElement extends CBaseCustomElement
 	async GetText()
 	{
 		const strFileName = this.getAttribute( "file-name" );
-		if ( !strFileName )
-		{
-			return "no file-name attr";
-		}
-
-		const strURL = `${ k_strBaseURL }/things/${ strFileName }.md`;
-		const result = await ExtResourcesTracker.Fetch( strURL );
-		if ( !result.ok )
-		{
-			return `${ strURL } returned "${ await result.text() }"`;
-		}
-
-		const strContent = result.text();
-		if ( !strContent )
-		{
-			return "no text";
-		}
-
-		return strContent;
+		return ExtResourcesTracker.FetchText( `${ k_strBaseURL }/things/${ strFileName }.md` );
 	}
 
 	/**
@@ -169,13 +169,45 @@ class CMarkdownRendererElement extends CBaseCustomElement
 			const strText = line.replace( /`(.*?)`/g, "<code> $1 </code>" );
 			this.AddLine( strText, true );
 		}
-		return this.m_lines.join( "\n" );
+	}
+
+	/**
+	 * @param {string} strURL
+	 */
+	SetFromURL( strURL )
+	{
+		const hash = strURL.slice( strURL.indexOf( "#" ) + 1 );
+		this.setAttribute( "file-name", hash );
+	}
+
+	/**
+	 * @param {string} strName
+	 */
+	async attributeChangedCallback( strName )
+	{
+		switch ( strName )
+		{
+			case "file-name":
+				await this.WriteText();
+				break;
+		}
+	}
+
+	async WriteText()
+	{
+		const strContent = await this.GetText();
+		this.ParseText( strContent );
+		this.setHTMLUnsafe( this.m_lines.join( "\n" ) );
 	}
 
 	async connectedCallback()
 	{
-		const strContent = await this.GetText();
-		this.innerHTML = this.ParseText( strContent );
+		if ( !this.getAttribute( "file-name" ) )
+		{
+			return;
+		}
+
+		await this.WriteText();
 	}
 }
 customElements.define( "markdown-renderer", CMarkdownRendererElement );
@@ -184,15 +216,23 @@ let els = {};
 
 document.addEventListener( "DOMContentLoaded", () => {
 	const id = (sel) => document.getElementById( sel );
+	const q = (sel) => document.querySelector( sel );
+
 	els = {
 		changeThemeBtn: id( "change-theme" ),
 		extResInfo: id( "footer-ext-res-info" ),
+		markdownRenderer: q( "markdown-renderer" ),
 		pageTitle: id( "page-title" ),
 	};
+
+	els.markdownRenderer.SetFromURL( location.href );
+	navigation.addEventListener( "navigate", ( ev ) => {
+		const { url } = ev.destination;
+		els.markdownRenderer.SetFromURL( url );
+	} );
 
 	els.changeThemeBtn.addEventListener( "click", () => {
 		const strTheme = RandomArrayElement( k_vecThemes );
 		ThemeStore.Change( strTheme );
-		els.extResInfo.dataset.count = ExtResourcesTracker.m_unExternalResources.toString();
 	} );
 } );
