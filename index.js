@@ -1,5 +1,10 @@
 const k_reURL = /(https?:\/\/[\w.-]+\.[a-z]{2,6}\b[-a-zA-Z0-9@:%_+.~#?&//=]*)/g;
 const k_strBaseURL = "https://raw.githubusercontent.com/ricewind012/ricewind012.github.io/refs/heads/master";
+
+const k_vecSomeFuckingImages = [
+	"https://raw.githubusercontent.com/ricewind012/aerothemesteam/refs/heads/master/assets/preview/main-window.png",
+];
+
 const k_vecThemes = [
 	"default",
 ];
@@ -16,14 +21,19 @@ function RandomArrayElement( vec )
 
 const ThemeStore =
 {
-	m_elStyle: document.head.querySelector( "style" ),
+	m_elStyle: (() => {
+		const el = document.createElement( "style" );
+		document.head.appendChild( el );
+		return el;
+	})(),
 
 	/**
 	 * @param {string} strTheme
 	 */
 	async Change( strTheme )
 	{
-		const strContent = ExtResourcesTracker.FetchText( `${ k_strBaseURL }/themes/${ strTheme }.css` );
+		const strURL = `${ k_strBaseURL }/themes/${ strTheme }.css`;
+		const strContent = await ExtResourcesTracker.FetchText( strURL );
 		this.m_elStyle.textContent = strContent;
 	},
 }
@@ -36,15 +46,15 @@ const ExtResourcesTracker =
 	Add()
 	{
 		this.m_unExternalResources++;
+		els.extResInfo.dataset.count = this.m_unExternalResources.toString();
 	},
 
 	/**
 	 * @param {string} strURL
 	 */
-	Fetch ( strURL )
+	Fetch( strURL )
 	{
 		this.Add();
-		els.extResInfo.dataset.count = this.m_unExternalResources.toString();
 		return fetch( strURL );
 	},
 
@@ -64,6 +74,8 @@ const ExtResourcesTracker =
 		{
 			return "empty text";
 		}
+
+		return strContent;
 	}
 }
 
@@ -128,13 +140,15 @@ class CMarkdownRendererElement extends CBaseCustomElement
 			{
 				const len = line.match( /^#+/g ).length;
 				const strTag = `h${ len }`
-				this.AddLine( `<${ strTag }> ${ line.slice( len ) } </${ strTag }>`, true );
 				if ( len === 1 )
 				{
 					const strTitle = line.slice( len + 1 );
 					document.title = strTitle;
 					els.pageTitle.textContent = strTitle;
+					continue;
 				}
+
+				this.AddLine( `<${ strTag }> ${ line.slice( len ) } </${ strTag }>`, true );
 				continue;
 			}
 
@@ -231,8 +245,12 @@ document.addEventListener( "DOMContentLoaded", () => {
 		els.markdownRenderer.SetFromURL( url );
 	} );
 
+	ThemeStore.Change( "default" );
 	els.changeThemeBtn.addEventListener( "click", () => {
 		const strTheme = RandomArrayElement( k_vecThemes );
 		ThemeStore.Change( strTheme );
 	} );
+
+	const strImage = RandomArrayElement( k_vecSomeFuckingImages );
+	document.documentElement.style.setProperty( "--bg-url", `url( "${ strImage }" )` );
 } );

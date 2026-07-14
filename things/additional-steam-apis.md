@@ -13,17 +13,27 @@ await mod.MakeReady();
 They follow the same structure, and are simple objects, so they are easy to find as webpack modules:
 
 ```ts
+import { findModuleExport } from "@decky/ui";
+
 const BluetoothManagerService = findModuleExport( (e) => e.GetAdapterDetailsHandler );
 ```
 
-All return a `Promise< CBaseProtoBufMsg< T > >` (I don't care enough to describe the type, but the repo has something about it, probably):
+All return a `Promise< CBaseProtoBufMsg< T > >` (see the type here: https://github.com/SteamDeckHomebrew/decky-frontend-lib/blob/bfbc84d39ba4aef2e2beba329a60041d5ff5ddb6/src/globals/shared/interfaces.ts#L46-L53):
 ```ts
+import { EResult } from "@decky/ui";
+
 const msg = await BluetoothManagerService.GetState();
+const result = msg.GetEResult();
+if ( result !== EResult.OK ) {
+	console.error( "got eresult %o from protobuf service", EResult[ result ] );
+	return;
+}
+
 console.log( msg.Body().toObject() );
 // -> {is_service_available: false, adapters: Array(0), devices: Array(0)}
 ```
 
-I could not catch which services Clientdll/SteamUI handle, since most of them are for the Steam Deck, but here is a list of all *exported and working* services. Expected return values should already be covered by https://github.com/SteamTracking/Protobufs in the `webui/service_*.proto` files.
+I could not type what any of these services return. Expected return values should already be covered by https://github.com/SteamTracking/Protobufs in the `webui/service_*.proto` files. I could not type any of them, since most of them are for the Steam Deck, but here is the list of all *exported* services:
 
 AccountPrivacy:
 

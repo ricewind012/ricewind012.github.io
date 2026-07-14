@@ -12,21 +12,23 @@
 	--spacing-2x: 16px;
 	--spacing-3x: 24px;
 	--spacing-4x: 32px;
+
+	--blur-radius: var( --spacing-4x );
 }
 
 body
 {
-	background-color: var(--bg);
-	color: var(--fg);
+	background-color: var( --bg );
+	color: var( --fg );
 	flex-direction: column;
 	margin: 0;
 }
 
 footer
 {
-	background-color: hsla(from var(--fg) h s l / 0.1);
+	background-color: hsla( from var(--fg) h s l / 0.1 );
 	flex-direction: column;
-	padding: var(--spacing-4x);
+	padding: var( --spacing-4x );
 }
 
 footer-ext-res-info
@@ -35,7 +37,7 @@ footer-ext-res-info
 
 	&::before
 	{
-		content: attr(data-count);
+		content: attr( data-count );
 	}
 
 	&::after
@@ -47,22 +49,36 @@ footer-ext-res-info
 
 header
 {
-	background-color: hsla(from var(--fg) h s l / 0.1);
+	background-color: hsla( from var(--fg) h s l / 0.1 );
 	flex-direction: column;
-	padding: var(--spacing-4x);
+	padding: var( --spacing-4x );
 }
 
 main
 {
-	margin: var(--spacing-4x) auto;
-	width: max(50%, 500px);
+	background-color: hsla( from var(--fg) h s l / 0.1 );
+	margin: var( --spacing-4x ) auto;
+	overflow: hidden;
+	padding: var( --spacing-4x );
+	position: relative;
+	width: max( 50%, 500px );
+
+	&::before
+	{
+		backdrop-filter: blur( var( --blur-radius ) );
+		background-image: var( --bg-url );
+		content: "";
+		inset: calc( var( --blur-radius ) * -1 );
+		position: absolute;
+		transform: translateZ(-1px) scale(2);
+		transform-origin: 0 0;
+		z-index: -1;
+	}
 }
 
 markdown-renderer
 {
-	background-color: hsla(from var(--fg) h s l / 0.1);
-	flex-direction: column;
-	padding: var(--spacing-4x);
+	display: contents;
 
 	pre
 	{
