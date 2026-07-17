@@ -7,18 +7,19 @@
 	</head>
 
 	<body>
-		<header>
-			<h1 id="page-title"></h1>
-		</header>
-		<main>
+		<page-image></page-image>
+		<page-header>
+			<page-title></page-title>
+		</page-header>
+		<page-main>
 			<markdown-renderer></markdown-renderer>
-		</main>
+		</page-main>
 		<footer>
-			<footer-ext-res-info
-				data-count="0"
-				id="footer-ext-res-info"
-			></footer-ext-res-info>
-			<footer-button id="change-theme">Change theme</footer-button>
+			<footer-ext-res-info data-count="0"></footer-ext-res-info>
+			<footer-button-group>
+				<footer-button id="change-image">Change image</footer-button>
+				<footer-button id="change-theme">Change theme</footer-button>
+			</footer-button-group>
 		</footer>
 	</body>
 </html>

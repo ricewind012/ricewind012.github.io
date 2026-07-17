@@ -1,0 +1,132 @@
+:where(*)
+{
+	box-sizing: border-box;
+}
+
+:root
+{
+	--bg: Canvas;
+	--fg: CanvasText;
+
+	--spacing-1x: 8px;
+	--spacing-2x: 16px;
+	--spacing-3x: 24px;
+	--spacing-4x: 32px;
+
+	--blur-radius: var( --spacing-4x );
+	--content-spacing: var( --spacing-4x );
+}
+
+@keyframes fade-out
+{
+	from
+	{
+		margin-block-end: 0;
+	}
+
+	to
+	{
+		margin-block-end: 100%;
+	}
+}
+
+body
+{
+	background-color: var( --bg );
+	color: var( --fg );
+	margin: 0;
+}
+
+footer
+{
+	align-items: center;
+	background-color: hsla( from var( --bg ) h s l / 0.5 );
+	display: flex;
+	padding: var( --spacing-4x );
+}
+
+footer-button
+{
+	align-items: center;
+	color: var( --fg );
+	cursor: pointer;
+	gap: var( --spacing-1x );
+	padding: var( --spacing-1x ) var( --spacing-2x );
+	user-select: none;
+
+	&:where( :hover ) {
+		background-color: color-mix( in srgb, currentColor 10%, transparent );
+	}
+
+	&:where( :active ) {
+		background-color: color-mix( in srgb, currentColor 25%, transparent );
+	}
+}
+
+footer-button-group
+{
+	display: flex;
+	flex-wrap: wrap;
+}
+
+footer-ext-res-info
+{
+	flex-grow: 1;
+	white-space: break-spaces;
+
+	&::before
+	{
+		content: attr( data-count );
+	}
+
+	&::after
+	{
+		opacity: 0.5;
+		content: " external resources fetched";
+	}
+}
+
+page-header
+{
+	background-color: hsla( from var( --bg ) h s l / 0.5 );
+	flex-direction: column;
+	padding: var( --spacing-4x );
+}
+
+page-image
+{
+	background-image: var( --bg-url );
+	box-shadow:
+		inset var( --spacing-4x ) 0 50vw var( --bg ),
+		inset 100vw 0 rgb( from var( --bg ) r g b / 0.25 );
+	filter: blur( var( --blur-radius ) );
+	inset: calc( var( --blur-radius ) * -1 );
+	position: fixed;
+	z-index: -1;
+
+	@media not ( prefers-reduced-motion )
+	{
+		animation: fade-out linear both;
+		animation-timeline: scroll(root);
+	}
+}
+
+page-main
+{
+	background-color: hsla( from var( --bg ) h s l / 0.5 );
+	margin: var( --spacing-4x ) auto;
+	padding: var( --content-spacing );
+	width: max( 50%, 500px );
+}
+
+markdown-renderer
+{
+	display: contents;
+
+	pre
+	{
+		margin-inline: calc( var( --content-spacing ) / -2 );
+		padding: calc( var( --content-spacing ) / 4 ) calc( var( --content-spacing ) / 2 );
+		white-space: break-spaces;
+	}
+}

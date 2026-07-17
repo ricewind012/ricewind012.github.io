@@ -2,8 +2,10 @@
 
 The "websocket open/closed" console message(s) on app startup is from the Clientdll/SteamUI WebSockets that are used for some APIs much like SteamClient, except done through protobuf services. God knows why it's done like that.
 
-You can replace the existing connections (see webpack module 12251) with your own like this (there will be errors about "multiple attempts", that means it works):
+You can replace the existing connections (see webpack module 12251) with your own like this to, then, manipulate it into logging which WebSocket is responsible for what service (there will be errors about "multiple attempts", that means it works):
 ```ts
+import { findModuleExport } from "@decky/ui";
+
 const mod = findModuleExport( (e) => e.GetMaximumMsgSizeBytes );
 await mod.Init();
 await mod.MakeReady();
@@ -33,7 +35,7 @@ console.log( msg.Body().toObject() );
 // -> {is_service_available: false, adapters: Array(0), devices: Array(0)}
 ```
 
-I could not type what any of these services return. Expected return values should already be covered by https://github.com/SteamTracking/Protobufs in the `webui/service_*.proto` files. I could not type any of them, since most of them are for the Steam Deck, but here is the list of all *exported* services:
+Expected return values should already be covered by https://github.com/SteamTracking/Protobufs in the `webui/service_*.proto` files, what you will be looking for are the `*_Response` messages. I could not type any of them, since most of them are for the Steam Deck, but here is the list of all *exported* services:
 
 AccountPrivacy:
 

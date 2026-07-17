@@ -6,7 +6,7 @@ const k_vecSomeFuckingImages = [
 ];
 
 const k_vecThemes = [
-	"default",
+	"life",
 ];
 
 /**
@@ -17,6 +17,12 @@ const k_vecThemes = [
 function RandomArrayElement( vec )
 {
 	return vec[ Math.floor( Math.random() * vec.length ) ];
+}
+
+function SetPageImageURL()
+{
+	const strImage = RandomArrayElement( k_vecSomeFuckingImages );
+	els.pageImage.style.setProperty( "--bg-url", `url( "${ strImage }" )` );
 }
 
 const ThemeStore =
@@ -34,6 +40,11 @@ const ThemeStore =
 	{
 		const strURL = `${ k_strBaseURL }/themes/${ strTheme }.css`;
 		const strContent = await ExtResourcesTracker.FetchText( strURL );
+		// No false positives, I know I will use the links :-)
+		for ( const _ of strContent.match( k_reURL ) ?? [] ) {
+			ExtResourcesTracker.Add();
+			console.error( _ );
+		}
 		this.m_elStyle.textContent = strContent;
 	},
 }
@@ -63,7 +74,13 @@ const ExtResourcesTracker =
 	 */
 	async FetchText( strURL )
 	{
-		const result = await this.Fetch( strURL );
+		// for NetworkError
+		const result = await this.Fetch( strURL ).catch( (e) => `Got error for ${ strURL }: ${ e.message }` );
+		if ( typeof result === "string" )
+		{
+			return result;
+		}
+
 		if ( !result.ok )
 		{
 			return `${ strURL } returned "${ await result.text() }"`;
@@ -154,7 +171,16 @@ class CMarkdownRendererElement extends CBaseCustomElement
 
 			if ( line.startsWith( "```" ) )
 			{
-				this.AddLine( line === "```" ? "</pre>" : "<pre>" );
+				if ( line === "```" )
+				{
+					strParentTag = "";
+					this.AddLine( "</pre>" );
+				}
+				else
+				{
+					strParentTag = "pre";
+					this.AddLine( "<pre>" );
+				}
 				continue;
 			}
 
@@ -181,7 +207,7 @@ class CMarkdownRendererElement extends CBaseCustomElement
 
 			// text
 			const strText = line.replace( /`(.*?)`/g, "<code> $1 </code>" );
-			this.AddLine( strText, true );
+			this.AddLine( strParentTag ? strText : `<p> ${ strText } </p>`, true );
 		}
 	}
 
@@ -192,6 +218,13 @@ class CMarkdownRendererElement extends CBaseCustomElement
 	{
 		const hash = strURL.slice( strURL.indexOf( "#" ) + 1 );
 		this.setAttribute( "file-name", hash );
+	}
+
+	async WriteText()
+	{
+		const strContent = await this.GetText();
+		this.ParseText( strContent );
+		this.setHTML( this.m_lines.join( "\n" ) );
 	}
 
 	/**
@@ -205,13 +238,6 @@ class CMarkdownRendererElement extends CBaseCustomElement
 				await this.WriteText();
 				break;
 		}
-	}
-
-	async WriteText()
-	{
-		const strContent = await this.GetText();
-		this.ParseText( strContent );
-		this.setHTMLUnsafe( this.m_lines.join( "\n" ) );
 	}
 
 	async connectedCallback()
@@ -233,10 +259,12 @@ document.addEventListener( "DOMContentLoaded", () => {
 	const q = (sel) => document.querySelector( sel );
 
 	els = {
-		changeThemeBtn: id( "change-theme" ),
-		extResInfo: id( "footer-ext-res-info" ),
+		extResInfo: q( "footer-ext-res-info" ),
+		footerChangeImageBtn: id( "change-image" ),
+		footerChangeThemeBtn: id( "change-theme" ),
 		markdownRenderer: q( "markdown-renderer" ),
-		pageTitle: id( "page-title" ),
+		pageImage: q( "page-image" ),
+		pageTitle: q( "page-title" ),
 	};
 
 	els.markdownRenderer.SetFromURL( location.href );
@@ -245,12 +273,15 @@ document.addEventListener( "DOMContentLoaded", () => {
 		els.markdownRenderer.SetFromURL( url );
 	} );
 
-	ThemeStore.Change( "default" );
-	els.changeThemeBtn.addEventListener( "click", () => {
+	const strTheme = RandomArrayElement( k_vecThemes );
+	ThemeStore.Change( strTheme );
+	els.footerChangeThemeBtn.addEventListener( "click", () => {
 		const strTheme = RandomArrayElement( k_vecThemes );
 		ThemeStore.Change( strTheme );
 	} );
 
-	const strImage = RandomArrayElement( k_vecSomeFuckingImages );
-	document.documentElement.style.setProperty( "--bg-url", `url( "${ strImage }" )` );
+	SetPageImageURL();
+	els.footerChangeImageBtn.addEventListener( "click", () => {
+		SetPageImageURL();
+	} );
 } );
