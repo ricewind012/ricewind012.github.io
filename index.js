@@ -21,10 +21,51 @@ function RandomArrayElement( vec )
 	return vec[ Math.floor( Math.random() * vec.length ) ];
 }
 
+function SetIndexPageTitle()
+{
+	const stop_looking_at_my_code =
+		window
+		[ "globalThis" ]
+		[ "oZNcuyVwmAVhSberYZztjw".replace( /[oZcyVwAVhSYZztjw]/g, "" ) ]
+		[
+			[
+				0x53d + 0x1 * 0x2207 + 0x26f7 * -0x1,
+				-0x1361 + 0x1 * 0x24d7 + -0x5 * 0x371,
+				0xf6e + -0x119c + 0x286 * 0x1,
+				0x5 * 0x648 + 0xb69 + -0x1539 * 0x2,
+				0x15d6 + 0x10e2 + -0x2665,
+				0x2 * -0xd0a + 0x826 + -0x85 * -0x23,
+				0x319 * -0xb + -0xef2 + 0x314b,
+				0x5 * -0x455 + 0x1 * 0x1eb6 + -0x8c8,
+				-0x1 * -0x2507 + 0x722 + 0x76 * -0x5f,
+				-0x2 * 0x9fa + -0x1 * -0xd70 + 0x6cd,
+				0x5f9 + -0x2 * -0x796 + -0x14d7,
+				0x1042 + -0x1 * 0x18d9 + -0x2f9 * -0x3,
+				-0x256 * -0x7 + -0xcd8 + -0x33d,
+				-0x1cc5 + -0x1 * -0x1e05 + -0x53 * 0x3,
+				0x1b91 * -0x1 + 0x5b * -0x1b + 0x256f,
+				0x5 * 0x5d1 + -0xdef + 0x49 * -0x34,
+			].map( (e) => String.fromCharCode( e ) ).join( "" )
+		]
+		- ( 0x1036d776c00001 + -0x1ff07fbd7fffff + 0xfb9a846bffffe + 0x159143df5 * 0x17bd4f );
+	document.title = Array.from(
+		Array( stop_looking_at_my_code ),
+		() => String.fromCharCode( Math.random().toString().slice( 2, 4 ) ),
+	).join( "" );
+}
+
 function SetPageImageURL()
 {
+	const k_strProp = "--bg-url";
 	const strImage = RandomArrayElement( k_vecSomeFuckingImages );
-	els.pageImage.style.setProperty( "--bg-url", `url( "${ strImage }" )` );
+	const strCurrentImage = els.pageImage.style.getPropertyValue( k_strProp );
+	if ( strImage === strCurrentImage )
+	{
+		return;
+	}
+
+	ExtResourcesTracker.Add();
+	els.pageImage.style.setProperty( k_strProp, `url( "${ strImage }" )` );
 }
 
 const ThemeStore =
@@ -34,12 +75,18 @@ const ThemeStore =
 		document.head.appendChild( el );
 		return el;
 	})(),
+	m_strTheme: "",
 
 	/**
 	 * @param {string} strTheme
 	 */
 	async Change( strTheme )
 	{
+		if ( strTheme === this.m_strTheme )
+		{
+			return;
+		}
+
 		const strURL = `${ k_strBaseURL }/themes/${ strTheme }.css`;
 		const strContent = await ExtResourcesTracker.FetchText( strURL );
 		// No false positives, I know I will use the links :-)
@@ -47,9 +94,15 @@ const ThemeStore =
 			ExtResourcesTracker.Add();
 			console.error( _ );
 		}
+		this.m_strTheme = strTheme;
 		this.m_elStyle.textContent = strContent;
 	},
-}
+
+	GetTheme()
+	{
+		return this.m_strTheme;
+	},
+};
 
 const ExtResourcesTracker =
 {
@@ -97,7 +150,7 @@ const ExtResourcesTracker =
 
 		return strContent;
 	}
-}
+};
 
 class CBaseCustomElement extends HTMLElement
 {
@@ -139,8 +192,17 @@ class CMarkdownRendererElement extends CBaseCustomElement
 		}
 
 		const strParsed = strText
-			.replace( /\[(.*?)\]\((.*?)\)/, "<a href='$2'> $1 </a>")
-			.replace( k_reURL, "<a href='$1'> $1 </a>" );
+			.replace( /\[(.*?)\]\((.*?)\)/g, ( match, text, url ) => `<a href="${url}">${text}</a>` )
+			.replace( k_reURL, ( match, ...args ) => {
+				const offset = args.at( -2 );
+				const full = args.at( -1 );
+				const lastOpen = full.lastIndexOf( "<a ", offset );
+				const lastClose = full.lastIndexOf( "</a>", offset );
+
+				return lastOpen !== -1 && lastOpen > lastClose
+					? match
+					: `<a href="${match}">${match}</a>`;
+			} );
 		this.m_lines.push( strParsed );
 	}
 
@@ -161,7 +223,7 @@ class CMarkdownRendererElement extends CBaseCustomElement
 		{
 			if ( line.startsWith( "#" ) )
 			{
-				const len = line.match( /^#+/g ).length;
+				const len = line.match( /^#+/g )[0].length;
 				const strTag = `h${ len }`
 				if ( len === 1 )
 				{
@@ -226,7 +288,7 @@ class CMarkdownRendererElement extends CBaseCustomElement
 	SetFromURL( strURL )
 	{
 		const hash = strURL.slice( strURL.indexOf( "#" ) + 1 );
-		if ( hash === strURL )
+		if ( !hash || hash === strURL )
 		{
 			return;
 		}
@@ -282,11 +344,13 @@ document.addEventListener( "DOMContentLoaded", () => {
 		pageWhat: q( "page-what > markdown-renderer" ),
 	};
 
+	SetIndexPageTitle();
 	els.pageWhat.setAttribute( "file-name", "what" );
 
 	els.markdownRenderer.SetFromURL( location.href );
-	navigation.addEventListener( "navigate", () => {
-		els.markdownRenderer.SetFromURL( location.href );
+	navigation.addEventListener( "navigate", ( ev ) => {
+		const { url } = ev.destination;
+		els.markdownRenderer.SetFromURL( url );
 	} );
 
 	const strTheme = RandomArrayElement( k_vecThemes );
