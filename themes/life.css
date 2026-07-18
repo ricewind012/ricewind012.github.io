@@ -123,6 +123,14 @@ markdown-renderer
 {
 	display: contents;
 
+	&[file-name]:not(
+		[file-name="https://firefox.localhost/"],
+		[file-name="https://firefox.localhost/index.html"]
+	) + page-what
+	{
+		display: none;
+	}
+
 	pre
 	{
 		margin-inline: calc( var( --content-spacing ) / -2 );

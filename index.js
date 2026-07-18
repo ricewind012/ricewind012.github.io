@@ -1,5 +1,7 @@
 const k_reURL = /(https?:\/\/[\w.-]+\.[a-z]{2,6}\b[-a-zA-Z0-9@:%_+.~#?&//=]*)/g;
-const k_strBaseURL = "https://raw.githubusercontent.com/ricewind012/ricewind012.github.io/refs/heads/master";
+const k_strBaseURL = location.hostname === "firefox.localhost"
+	? "https://firefox.localhost"
+	: "https://raw.githubusercontent.com/ricewind012/ricewind012.github.io/refs/heads/master";
 
 const k_vecSomeFuckingImages = [
 	"https://raw.githubusercontent.com/ricewind012/aerothemesteam/refs/heads/master/assets/preview/main-window.png",
@@ -75,7 +77,8 @@ const ExtResourcesTracker =
 	async FetchText( strURL )
 	{
 		// for NetworkError
-		const result = await this.Fetch( strURL ).catch( (e) => `Got error for ${ strURL }: ${ e.message }` );
+		const result = await this.Fetch( strURL )
+			.catch( (e) => `Got error for ${ strURL }: ${ e.message }` );
 		if ( typeof result === "string" )
 		{
 			return result;
@@ -135,14 +138,17 @@ class CMarkdownRendererElement extends CBaseCustomElement
 			return;
 		}
 
-		const strParsed = strText.replace( k_reURL, "<a href='$1'> $1 </a>" );
+		const strParsed = strText
+			.replace( /\[(.*?)\]\((.*?)\)/, "<a href='$2'> $1 </a>")
+			.replace( k_reURL, "<a href='$1'> $1 </a>" );
 		this.m_lines.push( strParsed );
 	}
 
 	async GetText()
 	{
 		const strFileName = this.getAttribute( "file-name" );
-		return ExtResourcesTracker.FetchText( `${ k_strBaseURL }/things/${ strFileName }.md` );
+		const strURL = `${ k_strBaseURL }/things/${ strFileName }.md`;
+		return ExtResourcesTracker.FetchText( strURL );
 	}
 
 	/**
@@ -206,7 +212,10 @@ class CMarkdownRendererElement extends CBaseCustomElement
 			}
 
 			// text
-			const strText = line.replace( /`(.*?)`/g, "<code> $1 </code>" );
+			const strText = line
+				.replace( /\*\*(.*?)\*\*/, "<b> $1 </b>")
+				.replace( /\*(.*?)\*/, "<i> $1 </i>")
+				.replace( /`(.*?)`/g, "<code> $1 </code>" );
 			this.AddLine( strParentTag ? strText : `<p> ${ strText } </p>`, true );
 		}
 	}
@@ -217,6 +226,11 @@ class CMarkdownRendererElement extends CBaseCustomElement
 	SetFromURL( strURL )
 	{
 		const hash = strURL.slice( strURL.indexOf( "#" ) + 1 );
+		if ( hash === strURL )
+		{
+			return;
+		}
+
 		this.setAttribute( "file-name", hash );
 	}
 
@@ -265,12 +279,14 @@ document.addEventListener( "DOMContentLoaded", () => {
 		markdownRenderer: q( "markdown-renderer" ),
 		pageImage: q( "page-image" ),
 		pageTitle: q( "page-title" ),
+		pageWhat: q( "page-what > markdown-renderer" ),
 	};
 
+	els.pageWhat.setAttribute( "file-name", "what" );
+
 	els.markdownRenderer.SetFromURL( location.href );
-	navigation.addEventListener( "navigate", ( ev ) => {
-		const { url } = ev.destination;
-		els.markdownRenderer.SetFromURL( url );
+	navigation.addEventListener( "navigate", () => {
+		els.markdownRenderer.SetFromURL( location.href );
 	} );
 
 	const strTheme = RandomArrayElement( k_vecThemes );
