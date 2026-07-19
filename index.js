@@ -5,11 +5,30 @@ const k_strBaseURL = location.hostname === "firefox.localhost"
 
 const k_vecSomeFuckingImages = [
 	"https://raw.githubusercontent.com/ricewind012/aerothemesteam/refs/heads/master/assets/preview/main-window.png",
+	"https://raw.githubusercontent.com/anitabi/image-merge/refs/heads/master/7eyih3xg.jpg",
+	"https://raw.githubusercontent.com/itorr/one-last-image/refs/heads/main/simple.jpg",
+	RandomArrayElement( [
+		"https://raw.githubusercontent.com/itorr/sakana/refs/heads/main/html/chisato.png",
+		"https://raw.githubusercontent.com/itorr/sakana/refs/heads/main/html/takina.png",
+	] ),
 ];
 
 const k_vecThemes = [
 	"life",
 ];
+
+/**
+ * @param {string} strText 
+ */
+function EscapeHTML( strText )
+{
+	return strText
+		.replaceAll( "&", "&amp;" )
+		.replaceAll( "<", "&lt;" )
+		.replaceAll( ">", "&gt;" )
+		.replaceAll( '"', "&quot;" )
+		.replaceAll( "'", "&#39;" );
+}
 
 /**
  * @template T
@@ -56,15 +75,23 @@ function SetIndexPageTitle()
 
 function SetPageImageURL()
 {
+	// Workaround for Firefox, doesn't even parse
+	if ( window.matchMedia( "( prefers-reduced-data )" ).matches )
+	{
+		return;
+	}
+
 	const k_strProp = "--bg-url";
 	const strImage = RandomArrayElement( k_vecSomeFuckingImages );
 	const strCurrentImage = els.pageImage.style.getPropertyValue( k_strProp );
-	if ( strImage === strCurrentImage )
+	if ( strCurrentImage === `url( "${ strImage }" )` )
 	{
 		return;
 	}
 
 	ExtResourcesTracker.Add();
+	els.pageImage.dataset.name =
+		strImage.slice( strImage.lastIndexOf( "/" ) + 1, strImage.lastIndexOf( "." ) );
 	els.pageImage.style.setProperty( k_strProp, `url( "${ strImage }" )` );
 }
 
@@ -247,7 +274,7 @@ class CMarkdownRendererElement extends CBaseCustomElement
 				else
 				{
 					strParentTag = "pre";
-					this.AddLine( "<pre>" );
+					this.AddLine( `<pre data-lang="${ line.slice( 3 ) }"  data-test="123">` );
 				}
 				continue;
 			}
@@ -265,6 +292,12 @@ class CMarkdownRendererElement extends CBaseCustomElement
 
 			if ( line === "" )
 			{
+				if ( strParentTag === "pre" )
+				{
+					this.AddLine( line );
+					continue;
+				}
+
 				if ( strParentTag !== "" )
 				{
 					this.AddLine( `</${ strParentTag }>` );
@@ -273,11 +306,13 @@ class CMarkdownRendererElement extends CBaseCustomElement
 				continue;
 			}
 
-			// text
+			// normal text
+			const ReplaceStuff = ( re, tag ) =>
+				strText.replace( re, ( _, s ) => `<${ tag }> ${ EscapeHTML( s ) } </${ tag }>` );
 			const strText = line
-				.replace( /\*\*(.*?)\*\*/, "<b> $1 </b>")
-				.replace( /\*(.*?)\*/, "<i> $1 </i>")
-				.replace( /`(.*?)`/g, "<code> $1 </code>" );
+				.replace( /\*\*(.*?)\*\*/g, "<b> $1 </b>")
+				.replace( /\s\*\b(.*?)\b\*\s/g, "<i> $1 </i>")
+				.replace( /`(.*?)`/g, ( _, s ) => `<code> ${ EscapeHTML( s ) } </code>` );
 			this.AddLine( strParentTag ? strText : `<p> ${ strText } </p>`, true );
 		}
 	}
@@ -326,22 +361,20 @@ class CMarkdownRendererElement extends CBaseCustomElement
 		await this.WriteText();
 	}
 }
-customElements.define( "markdown-renderer", CMarkdownRendererElement );
+customElements.define( "page-markdown", CMarkdownRendererElement );
 
 let els = {};
 
 document.addEventListener( "DOMContentLoaded", () => {
-	const id = (sel) => document.getElementById( sel );
 	const q = (sel) => document.querySelector( sel );
-
 	els = {
-		extResInfo: q( "footer-ext-res-info" ),
-		footerChangeImageBtn: id( "change-image" ),
-		footerChangeThemeBtn: id( "change-theme" ),
-		markdownRenderer: q( "markdown-renderer" ),
+		extResInfo: q( "page-footer-ext-res-info" ),
+		footerChangeImageBtn: q( "page-footer-button[name='change-image']" ),
+		footerChangeThemeBtn: q( "page-footer-button[name='change-theme']" ),
+		markdownRenderer: q( "page-content > page-markdown" ),
 		pageImage: q( "page-image" ),
 		pageTitle: q( "page-title" ),
-		pageWhat: q( "page-what > markdown-renderer" ),
+		pageWhat: q( "page-what > page-markdown" ),
 	};
 
 	SetIndexPageTitle();

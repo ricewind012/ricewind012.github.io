@@ -2,12 +2,14 @@
 {
 	from
 	{
-		margin-block-end: 0;
+		background-position-y: 25%;
+		margin-block-end: -25%;
 	}
 
 	to
 	{
-		margin-block-end: 50%;
+		background-position-y: 0%;
+		margin-block-end: 25%;
 	}
 }
 
@@ -18,12 +20,19 @@
 
 :root
 {
+	--a25: 0.25;
+	--a50: 0.5;
+
 	--bg: Canvas;
-	--bg-a50: hsla( from var( --bg ) h s l / 0.5 );
+	--bg-a25: hsla( from var( --bg ) h s l / var(--a25) );
+	--bg-a50: hsla( from var( --bg ) h s l / var(--a50) );
 	--fg: CanvasText;
+	--fg-a10: hsla( from var(--fg) h s l / 0.1 );
+	--fg-a50: hsla( from var(--fg) h s l / 0.5 );
 
 	--font-family-normal: "Adwaita Sans", "Inter", serif;
 	--font-family-monospace: "Adwaita Mono", monospace;
+	--font-line-height: 140%;
 	--font-size: 14px;
 
 	--spacing-1x: 0.5rem;
@@ -34,6 +43,17 @@
 	--blur-radius: var( --spacing-4x );
 	--content-spacing: var( --spacing-4x );
 	--content-width: max( 50dvi, 500px );
+
+	@media ( prefers-contrast )
+	{
+		--a25: 1;
+		--a50: 1;
+	}
+
+	@media ( prefers-reduced-transparency )
+	{
+		--a50: 1;
+	}
 }
 
 body
@@ -42,20 +62,42 @@ body
 	color: var( --fg );
 	display: flex;
 	flex-direction: column;
-	font: var(--font-size)/1.4 var(--font-family-normal);
+	font: var(--font-size)/var(--font-line-height) var(--font-family-normal);
 	margin: 0;
 	min-block-size: 100dvb;
 }
 
-footer
+page-content
 {
-	align-items: center;
+	--shadow-xy: 0 12px;
+	--shadow-spread: var( --spacing-4x );
+
 	background-color: var( --bg-a50 );
-	display: flex;
-	padding: var( --spacing-4x );
+	box-shadow:
+		var( --shadow-xy ) var( --shadow-spread ) var( --bg ),
+		inset var( --shadow-xy ) var( --content-width ) var( --bg );
+	display: block;
+	flex-grow: 1;
+	inline-size: var( --content-width );
+	margin: calc( var( --spacing-2x ) + var( --shadow-spread ) ) auto;
+	margin-trim: block;
+	padding: var( --content-spacing );
+
+	page-image:where( [data-name="chisato"], [data-name="takina"] ) ~ &
+	{
+		backdrop-filter: blur( var( --blur-radius ) );
+	}
 }
 
-footer-button
+page-footer
+{
+	align-items: center;
+	background-color: var( --bg );
+	display: flex;
+	padding: var( --spacing-2x ) var( --spacing-4x );
+}
+
+page-footer-button
 {
 	align-items: center;
 	color: var( --fg );
@@ -74,13 +116,13 @@ footer-button
 	}
 }
 
-footer-button-group
+page-footer-button-group
 {
 	display: flex;
 	flex-wrap: wrap;
 }
 
-footer-ext-res-info
+page-footer-ext-res-info
 {
 	flex-grow: 1;
 	white-space: break-spaces;
@@ -92,16 +134,16 @@ footer-ext-res-info
 
 	&::after
 	{
-		opacity: 0.5;
+		color: var( --fg-a50 );
 		content: " external resources fetched";
 	}
 }
 
 page-header
 {
-	background-color: var( --bg-a50 );
+	background-color: var( --bg );
 	font-weight: bold;
-	padding: var( --spacing-4x );
+	padding: var( --spacing-2x ) var( --spacing-4x );
 
 	&:has( > :empty )
 	{
@@ -111,14 +153,27 @@ page-header
 
 page-image
 {
+	--header-height: calc( var( --spacing-2x ) * 2 + 1rlh );
+
 	background-image: var( --bg-url );
 	box-shadow:
-		inset var( --spacing-4x ) 0 50vw var( --bg ),
-		inset 100dvi 0 rgb( from var( --bg ) r g b / 0.25 );
-	filter: blur( var( --blur-radius ) );
+		inset var( --spacing-4x ) var( --header-height ) 50dvi var( --bg ),
+		inset 100dvi var( --header-height ) var( --bg-a25 );
 	inset: calc( var( --blur-radius ) * -1 );
 	position: fixed;
 	z-index: -1;
+
+	&:not( [data-name="chisato"], [data-name="takina"] )
+	{
+		background-size: 100%;
+		filter: blur( var( --blur-radius ) );
+	}
+
+	@media not ( prefers-reduced-motion )
+	{
+		animation: fade-out linear both;
+		animation-timeline: scroll(root);
+	}
 
 	&::before
 	{
@@ -127,50 +182,44 @@ page-image
 		inset: 0;
 		position: absolute;
 	}
-
-	@media not ( prefers-reduced-motion )
-	{
-		animation: fade-out linear both;
-		animation-timeline: scroll(root);
-	}
 }
 
-page-main
-{
-	--shadow-xy: 0 12px;
-
-	background-color: var( --bg-a50 );
-	box-shadow:
-		var( --shadow-xy ) 32px var( --bg-a50 ),
-		inset var( --shadow-xy ) var( --content-width ) var( --bg-a50 );
-	display: block;
-	inline-size: var( --content-width );
-	margin: var( --spacing-4x ) auto;
-	margin-trim: block;
-	padding: var( --content-spacing );
-}
-
-markdown-renderer
+page-markdown
 {
 	display: contents;
 
-	/* what */
-	&[file-name]:not([file-name=""]) + page-what
+	page-content > &[file-name] + page-what
 	{
 		display: none;
 	}
 
 	code
 	{
+		background-color: var( --fg-a10 );
 		font-family: var(--font-family-monospace);
 	}
 
 	pre
 	{
-		background-color: var( --bg-a50 );
+		--content-spacing-x025: calc( var( --content-spacing ) / 4 );
+		--content-spacing-x05: calc( var( --content-spacing ) / 2 );
+
+		background-color: var( --fg-a10 );
 		font-family: var(--font-family-monospace);
 		margin-inline: calc( var( --content-spacing ) / -2 );
-		padding: calc( var( --content-spacing ) / 4 ) calc( var( --content-spacing ) / 2 );
+		padding: var( --content-spacing-x025 ) var( --content-spacing-x05 );
+		position: relative;
+		tab-size: 4;
 		white-space: break-spaces;
+
+		&::before
+		{
+			color: var( --fg-a50 );
+			content: attr( data-lang );
+			inset-block-start: calc( var( --content-spacing-x025 ) / -1 );
+			inset-inline-end: var( --content-spacing-x05 );
+			position: absolute;
+			text-transform: uppercase;
+		}
 	}
 }
