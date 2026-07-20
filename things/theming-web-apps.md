@@ -8,7 +8,7 @@ Use [Vencord](https://vencord.dev) (or [Vesktop](https://github.com/Vencord/Vesk
 
 ## Firefox
 
-For custom CSS see [this tutorial](https://www.reddit.com/r/FirefoxCSS/wiki/index/tutorials/), and for custom JS see https://github.com/MrOtherGuy/fx-autoconfig.
+For custom CSS see [this tutorial](https://www.reddit.com/r/FirefoxCSS/wiki/index/tutorials/), and for custom JS see https://github.com/MrOtherGuy/fx-autoconfig
 
 ## Spotify
 

@@ -1,6 +1,6 @@
 const k_reURL = /(https?:\/\/[\w.-]+\.[a-z]{2,6}\b[-a-zA-Z0-9@:%_+.~#?&//=]*)/g;
-const k_strBaseURL = location.hostname === "firefox.localhost"
-	? "https://firefox.localhost"
+const k_strBaseURL = location.hostname.slice( location.hostname.lastIndexOf( "." ) + 1 ) === "localhost"
+	? `https://${ location.hostname }`
 	: "https://raw.githubusercontent.com/ricewind012/ricewind012.github.io/refs/heads/master";
 
 const k_vecSomeFuckingImages = [
@@ -32,12 +32,33 @@ function EscapeHTML( strText )
 
 /**
  * @template T
- * @param {T} vec
+ * @param {T[]} vec
  * @returns {T}
  */
 function RandomArrayElement( vec )
 {
 	return vec[ Math.floor( Math.random() * vec.length ) ];
+}
+
+/**
+ * @template T
+ * @param {T[]} vec
+ * @param {T} fallback
+ * @returns {T}
+ */
+function RandomUniqueArrayElement( vec, fallback )
+{
+	if ( vec.length === 1 )
+	{
+		return vec[0];
+	}
+
+	let result = RandomArrayElement( vec );
+	while ( result === fallback )
+	{
+		result = RandomArrayElement( vec );
+	}
+	return result;
 }
 
 function SetIndexPageTitle()
@@ -71,6 +92,7 @@ function SetIndexPageTitle()
 		Array( stop_looking_at_my_code ),
 		() => String.fromCharCode( Math.random().toString().slice( 2, 4 ) ),
 	).join( "" );
+	els.pageTitle.textContent = "";
 }
 
 function SetPageImageURL()
@@ -82,17 +104,19 @@ function SetPageImageURL()
 	}
 
 	const k_strProp = "--bg-url";
-	const strImage = RandomArrayElement( k_vecSomeFuckingImages );
+	const img = RandomUniqueArrayElement( k_vecSomeFuckingImages, ThemeStore.GetImage() );
 	const strCurrentImage = els.pageImage.style.getPropertyValue( k_strProp );
-	if ( strCurrentImage === `url( "${ strImage }" )` )
+	const strCSSValue = `url( "${ img }" )`;
+	if ( strCurrentImage === strCSSValue )
 	{
 		return;
 	}
 
 	ExtResourcesTracker.Add();
+	ThemeStore.m_strImage = img;
 	els.pageImage.dataset.name =
-		strImage.slice( strImage.lastIndexOf( "/" ) + 1, strImage.lastIndexOf( "." ) );
-	els.pageImage.style.setProperty( k_strProp, `url( "${ strImage }" )` );
+		img.slice( img.lastIndexOf( "/" ) + 1, img.lastIndexOf( "." ) );
+	els.pageImage.style.setProperty( k_strProp, strCSSValue );
 }
 
 const ThemeStore =
@@ -102,6 +126,7 @@ const ThemeStore =
 		document.head.appendChild( el );
 		return el;
 	})(),
+	m_strImage: "",
 	m_strTheme: "",
 
 	/**
@@ -119,10 +144,14 @@ const ThemeStore =
 		// No false positives, I know I will use the links :-)
 		for ( const _ of strContent.match( k_reURL ) ?? [] ) {
 			ExtResourcesTracker.Add();
-			console.error( _ );
 		}
 		this.m_strTheme = strTheme;
 		this.m_elStyle.textContent = strContent;
+	},
+
+	GetImage()
+	{
+		return this.m_strImage;
 	},
 
 	GetTheme()
@@ -133,7 +162,7 @@ const ThemeStore =
 
 const ExtResourcesTracker =
 {
-	// <link> in the html
+	// <script> in the html
 	m_unExternalResources: 1,
 
 	Add()
@@ -176,14 +205,14 @@ const ExtResourcesTracker =
 		}
 
 		return strContent;
-	}
+	},
 };
 
 class CBaseCustomElement extends HTMLElement
 {
 	/**
 	 * Take a guess
-	 * @param {string} strTag
+	 * @param {keyof HTMLElementTagNameMap} strTag
 	 * @param {Record< string, string >} attrs
 	 */
 	CreateElement( strTag, attrs )
@@ -205,6 +234,8 @@ class CMarkdownRendererElement extends CBaseCustomElement
 
 	/** @type {string[]} */
 	m_lines = [];
+	/** @type {Map<string, string[]>} */
+	m_mapCache = new Map();
 
 	/**
 	 * @param {string} strText
@@ -251,16 +282,15 @@ class CMarkdownRendererElement extends CBaseCustomElement
 			if ( line.startsWith( "#" ) )
 			{
 				const len = line.match( /^#+/g )[0].length;
-				const strTag = `h${ len }`
+				const strTag = `h${ len }`;
 				if ( len === 1 )
 				{
 					const strTitle = line.slice( len + 1 );
 					document.title = strTitle;
 					els.pageTitle.textContent = strTitle;
-					continue;
 				}
 
-				this.AddLine( `<${ strTag }> ${ line.slice( len ) } </${ strTag }>`, true );
+				this.AddLine( `<${ strTag }>${ line.slice( len ) }</${ strTag }>`, true );
 				continue;
 			}
 
@@ -274,7 +304,7 @@ class CMarkdownRendererElement extends CBaseCustomElement
 				else
 				{
 					strParentTag = "pre";
-					this.AddLine( `<pre data-lang="${ line.slice( 3 ) }"  data-test="123">` );
+					this.AddLine( `<pre data-lang="${ line.slice( 3 ) }">` );
 				}
 				continue;
 			}
@@ -286,7 +316,7 @@ class CMarkdownRendererElement extends CBaseCustomElement
 					strParentTag = "ul";
 					this.AddLine( "<ul>" );
 				}
-				this.AddLine( `<li> ${ line.slice( 2 ) } </li>`, true );
+				this.AddLine( `<li>${ line.slice( 2 ) }</li>`, true );
 				continue;
 			}
 
@@ -307,13 +337,11 @@ class CMarkdownRendererElement extends CBaseCustomElement
 			}
 
 			// normal text
-			const ReplaceStuff = ( re, tag ) =>
-				strText.replace( re, ( _, s ) => `<${ tag }> ${ EscapeHTML( s ) } </${ tag }>` );
 			const strText = line
-				.replace( /\*\*(.*?)\*\*/g, "<b> $1 </b>")
-				.replace( /\s\*\b(.*?)\b\*\s/g, "<i> $1 </i>")
-				.replace( /`(.*?)`/g, ( _, s ) => `<code> ${ EscapeHTML( s ) } </code>` );
-			this.AddLine( strParentTag ? strText : `<p> ${ strText } </p>`, true );
+				.replace( /\*\*(.*?)\*\*/g, "<b>$1</b>")
+				.replace( /\s\b_(.*?)_\b\s/g, "<i>$1</i>")
+				.replace( /`(.*?)`/g, ( _, s ) => `<code>${ EscapeHTML( s ) }</code>` );
+			this.AddLine( strParentTag ? strText : `<p>${ strText }</p>`, true );
 		}
 	}
 
@@ -325,6 +353,9 @@ class CMarkdownRendererElement extends CBaseCustomElement
 		const hash = strURL.slice( strURL.indexOf( "#" ) + 1 );
 		if ( !hash || hash === strURL )
 		{
+			this.setHTML( "" );
+			this.removeAttribute( "file-name" );
+			SetIndexPageTitle();
 			return;
 		}
 
@@ -333,9 +364,21 @@ class CMarkdownRendererElement extends CBaseCustomElement
 
 	async WriteText()
 	{
-		const strContent = await this.GetText();
-		this.ParseText( strContent );
-		this.setHTML( this.m_lines.join( "\n" ) );
+		const strFileName = this.getAttribute( "file-name" );
+		if ( !strFileName )
+		{
+			return;
+		}
+
+		const cached = this.m_mapCache.get( strFileName );
+		if ( !cached )
+		{
+			const strContent = await this.GetText();
+			this.ParseText( strContent );
+			this.m_mapCache.set( strFileName, this.m_lines );
+		}
+
+		this.innerHTML = ( cached || this.m_lines ).join( "\n" );
 	}
 
 	/**
@@ -353,11 +396,6 @@ class CMarkdownRendererElement extends CBaseCustomElement
 
 	async connectedCallback()
 	{
-		if ( !this.getAttribute( "file-name" ) )
-		{
-			return;
-		}
-
 		await this.WriteText();
 	}
 }
@@ -366,7 +404,8 @@ customElements.define( "page-markdown", CMarkdownRendererElement );
 let els = {};
 
 document.addEventListener( "DOMContentLoaded", () => {
-	const q = (sel) => document.querySelector( sel );
+	/** @param {string} sel */
+	const q = ( sel ) => document.querySelector( sel );
 	els = {
 		extResInfo: q( "page-footer-ext-res-info" ),
 		footerChangeImageBtn: q( "page-footer-button[name='change-image']" ),
@@ -386,15 +425,16 @@ document.addEventListener( "DOMContentLoaded", () => {
 		els.markdownRenderer.SetFromURL( url );
 	} );
 
-	const strTheme = RandomArrayElement( k_vecThemes );
-	ThemeStore.Change( strTheme );
-	els.footerChangeThemeBtn.addEventListener( "click", () => {
-		const strTheme = RandomArrayElement( k_vecThemes );
+	const onFooterChangeThemeBtnClick = () => {
+		const strTheme = RandomUniqueArrayElement( k_vecThemes, ThemeStore.GetTheme() );
 		ThemeStore.Change( strTheme );
-	} );
+	};
+	onFooterChangeThemeBtnClick();
+	els.footerChangeThemeBtn.addEventListener( "click", onFooterChangeThemeBtnClick );
 
-	SetPageImageURL();
-	els.footerChangeImageBtn.addEventListener( "click", () => {
+	const onFooterChangeImageBtnClick = () => {
 		SetPageImageURL();
-	} );
+	};
+	onFooterChangeImageBtnClick();
+	els.footerChangeImageBtn.addEventListener( "click", onFooterChangeImageBtnClick );
 } );

@@ -13,7 +13,7 @@
 	}
 }
 
-:where(*)
+:where( * )
 {
 	box-sizing: border-box;
 }
@@ -32,7 +32,7 @@
 
 	--font-family-normal: "Adwaita Sans", "Inter", serif;
 	--font-family-monospace: "Adwaita Mono", monospace;
-	--font-line-height: 140%;
+	--font-line-height: 1.4;
 	--font-size: 14px;
 
 	--spacing-1x: 0.5rem;
@@ -42,6 +42,8 @@
 
 	--blur-radius: var( --spacing-4x );
 	--content-spacing: var( --spacing-4x );
+	--content-spacing-x025: calc( var( --content-spacing ) / 4 );
+	--content-spacing-x05: calc( var( --content-spacing ) / 2 );
 	--content-width: max( 50dvi, 500px );
 
 	@media ( prefers-contrast )
@@ -62,7 +64,7 @@ body
 	color: var( --fg );
 	display: flex;
 	flex-direction: column;
-	font: var(--font-size)/var(--font-line-height) var(--font-family-normal);
+	font: var( --font-size )/var( --font-line-height ) var( --font-family-normal );
 	margin: 0;
 	min-block-size: 100dvb;
 }
@@ -107,11 +109,13 @@ page-footer-button
 	padding: var( --spacing-1x ) var( --spacing-2x );
 	user-select: none;
 
-	&:where( :hover ) {
+	&:where( :hover )
+	{
 		background-color: color-mix( in srgb, currentColor 10%, transparent );
 	}
 
-	&:where( :active ) {
+	&:where( :active )
+	{
 		background-color: color-mix( in srgb, currentColor 25%, transparent );
 	}
 }
@@ -124,18 +128,12 @@ page-footer-button-group
 
 page-footer-ext-res-info
 {
+	color: var( --fg-a50 );
 	flex-grow: 1;
-	white-space: break-spaces;
 
 	&::before
 	{
 		content: attr( data-count );
-	}
-
-	&::after
-	{
-		color: var( --fg-a50 );
-		content: " external resources fetched";
 	}
 }
 
@@ -163,19 +161,19 @@ page-image
 	position: fixed;
 	z-index: -1;
 
-	&:not( [data-name="chisato"], [data-name="takina"] )
-	{
-		background-size: 100%;
-		filter: blur( var( --blur-radius ) );
-	}
-
 	@media not ( prefers-reduced-motion )
 	{
 		animation: fade-out linear both;
 		animation-timeline: scroll(root);
 	}
 
-	&::before
+	&:not( [data-name="chisato"], [data-name="takina"] )
+	{
+		background-size: 100%;
+		filter: blur( var( --blur-radius ) );
+	}
+
+	&:where( [data-name="chisato"], [data-name="takina"] )::before
 	{
 		background-image: linear-gradient( transparent, var( --bg ) );
 		content: "";
@@ -196,16 +194,19 @@ page-markdown
 	code
 	{
 		background-color: var( --fg-a10 );
-		font-family: var(--font-family-monospace);
+		font-family: var( --font-family-monospace );
+		padding-inline: var( --content-spacing-x025 );
+	}
+
+	h1
+	{
+		display: none;
 	}
 
 	pre
 	{
-		--content-spacing-x025: calc( var( --content-spacing ) / 4 );
-		--content-spacing-x05: calc( var( --content-spacing ) / 2 );
-
 		background-color: var( --fg-a10 );
-		font-family: var(--font-family-monospace);
+		font-family: var( --font-family-monospace );
 		margin-inline: calc( var( --content-spacing ) / -2 );
 		padding: var( --content-spacing-x025 ) var( --content-spacing-x05 );
 		position: relative;
@@ -216,8 +217,8 @@ page-markdown
 		{
 			color: var( --fg-a50 );
 			content: attr( data-lang );
-			inset-block-start: calc( var( --content-spacing-x025 ) / -1 );
-			inset-inline-end: var( --content-spacing-x05 );
+			inset-block-start: -0.5lh;
+			inset-inline-end: 0;
 			position: absolute;
 			text-transform: uppercase;
 		}

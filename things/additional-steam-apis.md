@@ -1,8 +1,10 @@
 # Additional APIs
 
+## Useless info
+
 The "websocket open/closed" console message(s) on app startup is from the Clientdll/SteamUI WebSockets that are used for some APIs much like SteamClient, except done through protobuf services. God knows why it's done like that.
 
-You can replace the existing connections (see webpack module 12251) with your own like this to, then, manipulate it into logging which WebSocket is responsible for what service (there will be errors about "multiple attempts", that means it works):
+You can replace the existing connections (see [webpack module 12251](https://github.com/ricewind012/steam-ui-unobfuscated/blob/master/src/chunk~2dcc5aaf7/12251.js)) with your own like this to, then, manipulate it into logging which WebSocket is responsible for what service (there will be errors about "multiple attempts", that means it works):
 
 ```ts
 import { findModuleExport } from "@decky/ui";
@@ -13,7 +15,9 @@ await mod.MakeReady();
 // -> {result: 1, message: "ready"}
 ```
 
-They follow the same structure, and are simple objects, so they are easy to find as webpack modules:
+## Useful info
+
+These protobuf service APIs follow the same structure, and are simple objects, so they are easy to find as webpack modules:
 
 ```ts
 import { findModuleExport } from "@decky/ui";
@@ -23,7 +27,7 @@ const BluetoothManagerService = findModuleExport(
 );
 ```
 
-All return a `Promise<CBaseProtoBufMsg<T>>` (see the type [here](https://github.com/SteamDeckHomebrew/decky-frontend-lib/blob/bfbc84d39ba4aef2e2beba329a60041d5ff5ddb6/src/globals/shared/interfaces.ts#L46-L53)):
+All of their methods return a `Promise<CBaseProtoBufMsg<T>>` (see the type [here](https://github.com/SteamDeckHomebrew/decky-frontend-lib/blob/bfbc84d39ba4aef2e2beba329a60041d5ff5ddb6/src/globals/shared/interfaces.ts#L46-L53)):
 
 ```ts
 import { EResult } from "@decky/ui";
@@ -39,7 +43,7 @@ console.log(msg.Body().toObject());
 // -> {is_service_available: false, adapters: Array(0), devices: Array(0)}
 ```
 
-Expected return values should already be covered by https://github.com/SteamTracking/Protobufs in the `webui/service_*.proto` files, what you will be looking for are the `*_Response` messages. I could not type any of them, since most of them are for the Steam Deck, but here is the list of all _exported_ services:
+Expected return values should already be covered by https://github.com/SteamTracking/Protobufs in the `webui/service_*.proto` files, what you will be looking for are the `*_Response` messages. I could not type any of them, since most of them are for the Steam Deck, which I do not own, but here is the list of all _exported_ services:
 
 AccountPrivacy:
 
