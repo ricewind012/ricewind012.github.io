@@ -1,0 +1,132 @@
+:root
+{
+	--bg-base-l: 62%;
+
+	--bg-line-color: color-mix( in srgb, Window 12.5%, transparent );
+	--bg-line-size: var( --spacing-4x );
+
+	--font-family-normal: sans-serif;
+	--font-family-monospace: monospace;
+	--font-line-height: 1.25;
+	--font-size: 16px;
+
+	--spacing-1x: 1vw;
+	--spacing-2x: 2vw;
+	--spacing-3x: 3vw;
+	--spacing-4x: 4vw;
+
+	--content-width: max( 50dvi, 500px );
+}
+
+body
+{
+	background: linear-gradient(
+		oklab( var( --bg-base-l ) -0.01166 -0.11709 ),
+		oklab( var( --bg-base-l ) 0.15048 -0.07133 )
+	);
+
+	&::before,
+	&::after
+	{
+		--a: calc( var( --bg-line-size ) / 5 );
+		--b: calc( var( --a ) * 2 );
+		--c: calc( var( --a ) * 3 );
+		--d: calc( var( --a ) * 4 );
+		--e: calc( var( --a ) * 5 );
+
+		--lines: repeating-linear-gradient(
+			var( --line-angle ),
+			transparent
+				0
+				calc( var( --bg-line-size ) - var( --a ) ),
+			var( --bg-line-color )
+				calc( var( --bg-line-size ) - var( --a ) )
+				calc( var( --bg-line-size ) * 2 )
+		), repeating-linear-gradient(
+			var( --line-angle ),
+			transparent
+				0
+				calc( var( --bg-line-size ) - var( --b ) ),
+			var( --bg-line-color )
+				calc( var( --bg-line-size ) - var( --b ) )
+				calc( var( --bg-line-size ) * 2 )
+		), repeating-linear-gradient(
+			var( --line-angle ),
+			transparent
+				0
+				calc( var( --bg-line-size ) - var( --c ) ),
+			var( --bg-line-color )
+				calc( var( --bg-line-size ) - var( --c ) )
+				calc( var( --bg-line-size ) * 2 )
+		), repeating-linear-gradient(
+			var( --line-angle ),
+			transparent
+				0
+				calc( var( --bg-line-size ) - var( --d ) ),
+			var( --bg-line-color )
+				calc( var( --bg-line-size ) - var( --d ) )
+				calc( var( --bg-line-size ) * 2 )
+		);
+
+		background-image: var( --lines );
+		content: "";
+		inset: 0;
+		position: fixed;
+		z-index: -1;
+	}
+
+	&::before
+	{
+		--line-angle: 45deg;
+	}
+
+	&::after
+	{
+		--line-angle: 135deg;
+	}
+}
+
+page-content
+{
+	background: Window;
+	margin: auto;
+}
+
+page-markdown
+{
+	h1, h2, h3, h4, h5, h6
+	{
+		border-block-end: 1px solid;
+		border-image: linear-gradient( 90deg, currentColor, transparent var( --pct ) ) 1;
+	}
+
+	h2
+	{
+		--pct: 50%;
+	}
+
+	h3
+	{
+		--pct: 25%;
+	}
+
+	h4
+	{
+		--pct: 12.5%;
+	}
+
+	h5
+	{
+		--pct: 6.25%;
+	}
+
+	h6
+	{
+		--pct: 3.125%;
+	}
+}
+
+page-title
+{
+	display: none;
+}

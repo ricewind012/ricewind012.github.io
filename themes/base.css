@@ -1,0 +1,50 @@
+:where( * )
+{
+	box-sizing: border-box;
+}
+
+body
+{
+	color: var( --fg );
+	display: flex;
+	flex-direction: column;
+	font: var( --font-size )/var( --font-line-height ) var( --font-family-normal );
+	margin: 0;
+	min-block-size: 100dvb;
+}
+
+page-content
+{
+	display: block;
+	inline-size: var( --content-width );
+	margin-trim: block;
+}
+
+page-footer
+{
+	//position: fixed;
+}
+
+page-footer-button-group
+{
+	display: flex;
+	flex-wrap: wrap;
+}
+
+page-image
+{
+	background-image: var( --bg-url );
+	position: fixed;
+	z-index: -1;
+}
+
+page-markdown
+{
+	display: contents;
+
+	pre
+	{
+		tab-size: 4;
+		white-space: break-spaces;
+	}
+}

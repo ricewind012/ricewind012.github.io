@@ -1,3 +1,19 @@
+@keyframes dropdown
+{
+	0%
+	{
+		transform: translateY( calc( var( --spacing-1x ) * -1 ) );
+		opacity: 0;
+	}
+
+	100%
+	{
+		transform: translateY( 0 );
+		opacity: 1;
+	}
+}
+
+
 @keyframes fade-out
 {
 	from
@@ -11,11 +27,6 @@
 		background-position-y: 0%;
 		margin-block-end: 25%;
 	}
-}
-
-:where( * )
-{
-	box-sizing: border-box;
 }
 
 :root
@@ -40,16 +51,27 @@
 	--spacing-3x: 1.5rem;
 	--spacing-4x: 2rem;
 
-	--blur-radius: var( --spacing-4x );
+	--content-margin-block: calc( var( --spacing-2x ) + var( --content-shadow-spread ) );
+	--content-shadow-xy: 0 12px;
+	--content-shadow-spread: var( --spacing-4x );
 	--content-spacing: var( --spacing-4x );
 	--content-spacing-x025: calc( var( --content-spacing ) / 4 );
 	--content-spacing-x05: calc( var( --content-spacing ) / 2 );
 	--content-width: max( 50dvi, 500px );
 
+	--animation-time: 150ms;
+	--blur-radius: var( --spacing-4x );
+	--header-height: calc( var( --spacing-2x ) * 2 + 1rlh );
+
 	@media ( prefers-contrast )
 	{
 		--a25: 1;
 		--a50: 1;
+	}
+
+	@media ( prefers-reduced-motion )
+	{
+		--animation-time: 0ms;
 	}
 
 	@media ( prefers-reduced-transparency )
@@ -62,27 +84,17 @@ body
 {
 	background: var( --bg );
 	color: var( --fg );
-	display: flex;
-	flex-direction: column;
-	font: var( --font-size )/var( --font-line-height ) var( --font-family-normal );
-	margin: 0;
-	min-block-size: 100dvb;
 }
 
 page-content
 {
-	--shadow-xy: 0 12px;
-	--shadow-spread: var( --spacing-4x );
-
+	animation: dropdown var( --animation-time ) forwards;
 	background-color: var( --bg-a50 );
 	box-shadow:
-		var( --shadow-xy ) var( --shadow-spread ) var( --bg ),
-		inset var( --shadow-xy ) var( --content-width ) var( --bg );
-	display: block;
+		var( --content-shadow-xy ) var( --content-shadow-spread ) var( --bg ),
+		inset var( --content-shadow-xy ) var( --content-width ) var( --bg );
 	flex-grow: 1;
-	inline-size: var( --content-width );
-	margin: calc( var( --spacing-2x ) + var( --shadow-spread ) ) auto;
-	margin-trim: block;
+	margin: var( --content-margin-block ) auto;
 	padding: var( --content-spacing );
 
 	page-image:where( [data-name="chisato"], [data-name="takina"] ) ~ &
@@ -120,12 +132,6 @@ page-footer-button
 	}
 }
 
-page-footer-button-group
-{
-	display: flex;
-	flex-wrap: wrap;
-}
-
 page-footer-ext-res-info
 {
 	color: var( --fg-a50 );
@@ -137,29 +143,12 @@ page-footer-ext-res-info
 	}
 }
 
-page-header
-{
-	background-color: var( --bg );
-	font-weight: bold;
-	padding: var( --spacing-2x ) var( --spacing-4x );
-
-	&:has( > :empty )
-	{
-		display: none;
-	}
-}
-
 page-image
 {
-	--header-height: calc( var( --spacing-2x ) * 2 + 1rlh );
-
-	background-image: var( --bg-url );
 	box-shadow:
 		inset var( --spacing-4x ) var( --header-height ) 50dvi var( --bg ),
 		inset 100dvi var( --header-height ) var( --bg-a25 );
 	inset: calc( var( --blur-radius ) * -1 );
-	position: fixed;
-	z-index: -1;
 
 	@media not ( prefers-reduced-motion )
 	{
@@ -184,13 +173,6 @@ page-image
 
 page-markdown
 {
-	display: contents;
-
-	page-content > &[file-name] + page-what
-	{
-		display: none;
-	}
-
 	code
 	{
 		background-color: var( --fg-a10 );
@@ -210,8 +192,6 @@ page-markdown
 		margin-inline: calc( var( --content-spacing ) / -2 );
 		padding: var( --content-spacing-x025 ) var( --content-spacing-x05 );
 		position: relative;
-		tab-size: 4;
-		white-space: break-spaces;
 
 		&::before
 		{
@@ -222,5 +202,29 @@ page-markdown
 			position: absolute;
 			text-transform: uppercase;
 		}
+	}
+}
+
+page-nav
+{
+	page-content:has( > page-markdown[file-name] ) + &
+	{
+		background: linear-gradient( 90deg, var( --bg ), transparent );
+		inset-block-start: calc( var( --header-height ) + var( --content-margin-block ) );
+		inset-inline-start: 0;
+		padding: var( --content-spacing );
+		position: fixed;
+	}
+}
+
+page-title
+{
+	background-color: var( --bg );
+	font-weight: bold;
+	padding: var( --spacing-2x ) var( --spacing-4x );
+
+	&:empty
+	{
+		display: none;
 	}
 }

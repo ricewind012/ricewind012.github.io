@@ -1,7 +1,7 @@
 const k_reURL = /(https?:\/\/[\w.-]+\.[a-z]{2,6}\b[-a-zA-Z0-9@:%_+.~#?&//=]*)/g;
-const k_strBaseURL = location.hostname.slice( location.hostname.lastIndexOf( "." ) + 1 ) === "localhost"
-	? `https://${ location.hostname }`
-	: "https://raw.githubusercontent.com/ricewind012/ricewind012.github.io/refs/heads/master";
+const k_strBaseURL = location.hostname === "ricewind012.github.io"
+	? "https://raw.githubusercontent.com/ricewind012/ricewind012.github.io/refs/heads/master"
+	: `https://${ location.hostname }`;
 
 const k_vecSomeFuckingImages = [
 	"https://raw.githubusercontent.com/ricewind012/aerothemesteam/refs/heads/master/assets/preview/main-window.png",
@@ -14,6 +14,7 @@ const k_vecSomeFuckingImages = [
 ];
 
 const k_vecThemes = [
+	"rectgradient",
 	"life",
 ];
 
@@ -112,7 +113,7 @@ function SetPageImageURL()
 		return;
 	}
 
-	ExtResourcesTracker.Add();
+	ExtResourcesTracker.Add( img );
 	ThemeStore.m_strImage = img;
 	els.pageImage.dataset.name =
 		img.slice( img.lastIndexOf( "/" ) + 1, img.lastIndexOf( "." ) );
@@ -142,8 +143,8 @@ const ThemeStore =
 		const strURL = `${ k_strBaseURL }/themes/${ strTheme }.css`;
 		const strContent = await ExtResourcesTracker.FetchText( strURL );
 		// No false positives, I know I will use the links :-)
-		for ( const _ of strContent.match( k_reURL ) ?? [] ) {
-			ExtResourcesTracker.Add();
+		for ( const match of strContent.match( k_reURL ) ?? [] ) {
+			ExtResourcesTracker.Add( match );
 		}
 		this.m_strTheme = strTheme;
 		this.m_elStyle.textContent = strContent;
@@ -162,11 +163,22 @@ const ThemeStore =
 
 const ExtResourcesTracker =
 {
-	// <script> in the html
-	m_unExternalResources: 1,
+	/** @type {Set< string >} */
+	m_setCachedLinks: new Set(),
+	// <script> & base theme <link> in the html
+	m_unExternalResources: 2,
 
-	Add()
+	/**
+	 * @param {string} strURL
+	 */
+	Add( strURL )
 	{
+		if ( this.m_setCachedLinks.has( strURL ) )
+		{
+			return;
+		}
+
+		this.m_setCachedLinks.add( strURL );
 		this.m_unExternalResources++;
 		els.extResInfo.dataset.count = this.m_unExternalResources.toString();
 	},
@@ -176,7 +188,7 @@ const ExtResourcesTracker =
 	 */
 	Fetch( strURL )
 	{
-		this.Add();
+		this.Add( strURL );
 		return fetch( strURL );
 	},
 
@@ -413,11 +425,11 @@ document.addEventListener( "DOMContentLoaded", () => {
 		markdownRenderer: q( "page-content > page-markdown" ),
 		pageImage: q( "page-image" ),
 		pageTitle: q( "page-title" ),
-		pageWhat: q( "page-what > page-markdown" ),
+		pageNav: q( "page-nav > page-markdown" ),
 	};
 
 	SetIndexPageTitle();
-	els.pageWhat.setAttribute( "file-name", "what" );
+	els.pageNav.setAttribute( "file-name", "what" );
 
 	els.markdownRenderer.SetFromURL( location.href );
 	navigation.addEventListener( "navigate", ( ev ) => {
